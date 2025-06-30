@@ -1,0 +1,28 @@
+# Nornir Defaults Inventory
+# Default connection parameters
+
+username: admin
+password: admin
+
+connection_options:
+  netmiko:
+    extras:
+      timeout: 60
+      session_timeout: 60
+      auth_timeout: 60
+      banner_timeout: 15
+      conn_timeout: 10
+      read_timeout_override: 60
+      global_delay_factor: 2
+      global_cmd_verify: false
+  napalm:
+    extras:
+      timeout: 60
+  scrapli:
+    extras:
+      timeout_socket: 60
+      timeout_transport: 60
+      timeout_ops: 60
+
+data:
+  domain: company.local

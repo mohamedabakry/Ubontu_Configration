@@ -1,0 +1,121 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: routing_tables
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d routing_tables"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - routing_collector
+
+  # Route Table Collector (Scheduler Mode)
+  route-collector:
+    build: .
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=routing_tables
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - COLLECTION_INTERVAL=3600
+      - MAX_WORKERS=10
+      - LOG_LEVEL=INFO
+      - ENABLE_CHANGE_DETECTION=true
+    volumes:
+      - ./inventory:/app/inventory
+      - ./logs:/app/logs
+      - collector_data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - routing_collector
+    command: ["python", "-m", "src.cli", "scheduler"]
+
+  # One-time Collection Service (for manual runs)
+  route-collector-once:
+    build: .
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=routing_tables
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - LOG_LEVEL=INFO
+    volumes:
+      - ./inventory:/app/inventory
+      - ./logs:/app/logs
+      - collector_data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - routing_collector
+    profiles:
+      - manual
+    command: ["python", "-m", "src.cli", "collect"]
+
+  # pgAdmin for database management (optional)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    ports:
+      - "8080:80"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - routing_collector
+    profiles:
+      - admin
+
+  # Redis for caching (future enhancement)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - routing_collector
+    profiles:
+      - cache
+
+volumes:
+  postgres_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+  redis_data:
+    driver: local
+  collector_data:
+    driver: local
+
+networks:
+  routing_collector:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

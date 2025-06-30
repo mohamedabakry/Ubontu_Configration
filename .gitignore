@@ -1,0 +1,148 @@
+# Route Table Collector .gitignore
+
+# Environment and configuration
+.env
+.env.local
+.env.production
+.env.development
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+.env/
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+.tox/
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+log/
+
+# Database
+*.db
+*.sqlite3
+*.sqlite
+
+# Backups
+backups/
+*.sql.backup
+*.dump
+
+# Exports
+exports/
+*.csv
+*.json
+routes_*.json
+routes_*.csv
+
+# Docker volumes and data
+data/
+volumes/
+
+# Secrets and credentials
+secrets/
+credentials/
+*.pem
+*.key
+id_rsa*
+*.crt
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Network device outputs (for debugging)
+device_outputs/
+debug_outputs/
+
+# Documentation builds
+docs/_build/
+docs/.doctrees/
+
+# Jupyter Notebooks (if used for analysis)
+.ipynb_checkpoints/
+*.ipynb
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Profiling data
+.prof/
+
+# Local configuration overrides
+inventory/hosts.local.yaml
+inventory/groups.local.yaml
+inventory/defaults.local.yaml
+config.local.py
+
+# Container-specific ignores
+.dockerignore
+docker-compose.override.yml
+
+# Kubernetes secrets
+k8s/secrets/
+*.secret.yaml
+
+# Archive files
+*.tar.gz
+*.zip
+*.rar
+
+# Application specific
+collection_runs/
+route_cache/
+device_cache/
