@@ -18,8 +18,8 @@ psycopg2-binary==2.9.5          # PostgreSQL adapter - stable
 sqlalchemy==1.4.46              # SQLAlchemy 1.4.x LTS series
 alembic==1.9.2                  # Database migrations - stable
 
-# Configuration Management - NO PYDANTIC ISSUES
-# Using Python dataclasses instead of Pydantic to avoid version conflicts
+# Configuration Management - PURE PYTHON STANDARD LIBRARY
+# Using simple Python classes with os.getenv() - no external dependencies
 
 # CLI & User Interface - STABLE VERSIONS
 click==8.1.3                    # CLI framework - stable

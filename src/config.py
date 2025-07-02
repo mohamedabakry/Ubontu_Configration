@@ -1,64 +1,42 @@
-"""Configuration management for the routing table collector."""
+"""Ultra-simple configuration using only Python standard library."""
 import os
 from typing import Optional
-from dataclasses import dataclass
 
 
-@dataclass
-class Config:
-    """Main application configuration using environment variables."""
+class SimpleConfig:
+    """Simple configuration class using only standard library."""
     
-    # Database settings
-    db_host: str = "localhost"
-    db_port: int = 9100
-    db_name: str = "routing_tables"
-    db_user: str = "postgres"
-    db_password: str = "postgres"
-    
-    # Collection settings
-    collection_interval: int = 3600
-    max_workers: int = 10
-    timeout: int = 60
-    
-    # Nornir inventory paths
-    inventory_hosts: str = "inventory/hosts.yaml"
-    inventory_groups: str = "inventory/groups.yaml"
-    inventory_defaults: str = "inventory/defaults.yaml"
-    
-    # Logging
-    log_level: str = "INFO"
-    log_file: Optional[str] = None
-    
-    # Change detection
-    enable_change_detection: bool = True
-    change_threshold: float = 0.1
-    
-    def __post_init__(self):
-        """Load configuration from environment variables."""
+    def __init__(self):
         # Database settings
-        self.db_host = os.getenv("DB_HOST", self.db_host)
-        self.db_port = int(os.getenv("DB_PORT", str(self.db_port)))
-        self.db_name = os.getenv("DB_NAME", self.db_name)
-        self.db_user = os.getenv("DB_USER", self.db_user)
-        self.db_password = os.getenv("DB_PASSWORD", self.db_password)
+        self.db_host = os.getenv("DB_HOST", "localhost")
+        self.db_port = int(os.getenv("DB_PORT", "9100"))
+        self.db_name = os.getenv("DB_NAME", "routing_tables")
+        self.db_user = os.getenv("DB_USER", "postgres")
+        self.db_password = os.getenv("DB_PASSWORD", "postgres")
         
         # Collection settings
-        self.collection_interval = int(os.getenv("COLLECTION_INTERVAL", str(self.collection_interval)))
-        self.max_workers = int(os.getenv("MAX_WORKERS", str(self.max_workers)))
-        self.timeout = int(os.getenv("TIMEOUT", str(self.timeout)))
+        self.collection_interval = int(os.getenv("COLLECTION_INTERVAL", "3600"))
+        self.max_workers = int(os.getenv("MAX_WORKERS", "10"))
+        self.timeout = int(os.getenv("TIMEOUT", "60"))
+        
+        # Nornir inventory paths
+        self.inventory_hosts = os.getenv("INVENTORY_HOSTS", "inventory/hosts.yaml")
+        self.inventory_groups = os.getenv("INVENTORY_GROUPS", "inventory/groups.yaml")
+        self.inventory_defaults = os.getenv("INVENTORY_DEFAULTS", "inventory/defaults.yaml")
         
         # Logging
-        self.log_level = os.getenv("LOG_LEVEL", self.log_level).upper()
-        self.log_file = os.getenv("LOG_FILE", self.log_file)
+        self.log_level = self._validate_log_level(os.getenv("LOG_LEVEL", "INFO"))
+        self.log_file = os.getenv("LOG_FILE")
         
         # Change detection
         self.enable_change_detection = os.getenv("ENABLE_CHANGE_DETECTION", "true").lower() == "true"
-        self.change_threshold = float(os.getenv("CHANGE_THRESHOLD", str(self.change_threshold)))
-        
-        # Validate log level
+        self.change_threshold = float(os.getenv("CHANGE_THRESHOLD", "0.1"))
+    
+    def _validate_log_level(self, level: str) -> str:
+        """Validate and return log level."""
         valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
-        if self.log_level not in valid_levels:
-            self.log_level = "INFO"
+        level = level.upper()
+        return level if level in valid_levels else "INFO"
     
     @property
     def database_url(self) -> str:
@@ -67,4 +45,4 @@ class Config:
 
 
 # Global configuration instance
-config = Config()
+config = SimpleConfig()
