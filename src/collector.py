@@ -1,4 +1,4 @@
-"""Main route table collector using Nornir."""
+"""Main route table collector using Nornir and Netmiko only."""
 import time
 from datetime import datetime
 from typing import Dict, List, Optional, Any
@@ -8,28 +8,19 @@ from nornir import InitNornir
 from nornir.core.task import Task, Result
 from nornir.core.filter import F
 from nornir_netmiko.tasks import netmiko_send_command
-from nornir_napalm.tasks import napalm_get
-from nornir_scrapli.tasks import send_command as scrapli_send_command
 
 from .config import config
 from .database import db_manager
 from .models import Device, VRF, Route, CollectionRun, ChangeLog
-from .parsers import CiscoParser, JuniperParser, HuaweiParser
-from .parsers.base import ParsedRoute, VRFInfo
 
 logger = structlog.get_logger(__name__)
 
 
 class RouteTableCollector:
-    """Main collector class for routing table data."""
+    """Main collector class for routing table data using Netmiko only."""
     
     def __init__(self):
         self.nr = None
-        self.parsers = {
-            "cisco": CiscoParser(),
-            "juniper": JuniperParser(),
-            "huawei": HuaweiParser(),
-        }
         self.logger = logger
         self._initialize_nornir()
     
@@ -52,74 +43,107 @@ class RouteTableCollector:
             self.logger.error("Failed to initialize Nornir", error=str(e))
             raise
     
-    def get_parser(self, vendor: str) -> Optional[Any]:
-        """Get parser for a vendor."""
-        vendor_lower = vendor.lower()
-        
-        # Map common vendor names
-        vendor_map = {
-            "ios": "cisco",
-            "iosxe": "cisco", 
-            "iosxr": "cisco",
-            "nxos": "cisco",
-            "junos": "juniper",
-            "vrp": "huawei",
+    def get_commands_for_platform(self, platform: str) -> Dict[str, str]:
+        """Get commands for different platforms."""
+        commands = {
+            "cisco_ios": {
+                "vrf_list": "show vrf",
+                "routing_table": "show ip route",
+                "routing_table_vrf": "show ip route vrf {vrf}"
+            },
+            "cisco_xe": {
+                "vrf_list": "show vrf",
+                "routing_table": "show ip route",
+                "routing_table_vrf": "show ip route vrf {vrf}"
+            },
+            "cisco_xr": {
+                "vrf_list": "show vrf all",
+                "routing_table": "show route",
+                "routing_table_vrf": "show route vrf {vrf}"
+            },
+            "juniper_junos": {
+                "vrf_list": "show route instance",
+                "routing_table": "show route",
+                "routing_table_vrf": "show route instance {vrf}"
+            }
         }
         
-        mapped_vendor = vendor_map.get(vendor_lower, vendor_lower)
-        return self.parsers.get(mapped_vendor)
+        # Default to cisco_ios if platform not found
+        return commands.get(platform, commands["cisco_ios"])
+    
+    def parse_simple_routes(self, output: str, vrf: str = "default") -> List[Dict]:
+        """Simple route parsing for demonstration."""
+        routes = []
+        lines = output.split('\n')
+        
+        for line in lines:
+            line = line.strip()
+            if not line or line.startswith('Codes:') or line.startswith('Gateway'):
+                continue
+            
+            # Very basic parsing - this should be enhanced based on actual output
+            parts = line.split()
+            if len(parts) >= 3:
+                try:
+                    # Simple heuristic for route lines
+                    if '/' in parts[0] or parts[0] in ['C', 'S', 'R', 'B', 'O']:
+                        network = parts[1] if parts[0] in ['C', 'S', 'R', 'B', 'O'] else parts[0]
+                        if '/' in network:
+                            destination, prefix = network.split('/')
+                            routes.append({
+                                'destination': destination,
+                                'prefix_length': int(prefix),
+                                'protocol': parts[0] if parts[0] in ['C', 'S', 'R', 'B', 'O'] else 'Unknown',
+                                'next_hop': parts[2] if len(parts) > 2 else None,
+                                'vrf': vrf
+                            })
+                except (ValueError, IndexError):
+                    # Skip malformed lines
+                    continue
+        
+        return routes
     
     def collect_device_info(self, task: Task) -> Result:
         """Nornir task to collect device information."""
         host = task.host
-        parser = self.get_parser(host.platform)
-        
-        if not parser:
-            return Result(
-                host=host,
-                failed=True,
-                exception=f"No parser available for platform: {host.platform}"
-            )
+        platform = host.platform
         
         try:
-            # Get VRF list first
-            vrf_command = parser.get_vrf_list_command()
-            vrf_result = task.run(
+            commands = self.get_commands_for_platform(platform)
+            
+            # Collect default routing table
+            rt_result = task.run(
                 netmiko_send_command,
-                command_string=vrf_command,
+                command_string=commands["routing_table"],
                 use_textfsm=False
             )
             
-            vrfs = parser.parse_vrf_list(vrf_result.result)
+            routes = self.parse_simple_routes(rt_result.result, "default")
             
-            # Collect routing tables for each VRF
-            all_routes = []
-            for vrf_info in vrfs:
-                try:
-                    rt_command = parser.get_routing_table_command(vrf_info.name)
-                    rt_result = task.run(
-                        netmiko_send_command,
-                        command_string=rt_command,
-                        use_textfsm=False
-                    )
-                    
-                    routes = parser.parse_routing_table(rt_result.result, vrf_info.name)
-                    all_routes.extend(routes)
-                    
-                    self.logger.info("Collected routes", 
-                                   host=host.name, vrf=vrf_info.name, 
-                                   route_count=len(routes))
-                
-                except Exception as e:
-                    self.logger.warning("Failed to collect VRF routes", 
-                                      host=host.name, vrf=vrf_info.name, 
-                                      error=str(e))
+            # Try to get VRF list (this may fail on some devices)
+            vrfs = [{"name": "default", "rd": None, "description": "Default VRF"}]
+            
+            try:
+                vrf_result = task.run(
+                    netmiko_send_command,
+                    command_string=commands["vrf_list"],
+                    use_textfsm=False
+                )
+                # Basic VRF parsing could be added here
+                # For now, just use default VRF
+            except Exception:
+                # VRF command failed, continue with default VRF only
+                pass
+            
+            self.logger.info("Collected routes", 
+                           host=host.name, 
+                           route_count=len(routes))
             
             return Result(
                 host=host,
                 result={
                     "vrfs": vrfs,
-                    "routes": all_routes,
+                    "routes": routes,
                     "collection_time": datetime.utcnow()
                 }
             )
@@ -169,43 +193,38 @@ class RouteTableCollector:
                 for vrf_info in vrfs_data:
                     vrf = session.query(VRF).filter_by(
                         device_id=device.id, 
-                        name=vrf_info.name
+                        name=vrf_info["name"]
                     ).first()
                     
                     if not vrf:
                         vrf = VRF(
                             device_id=device.id,
-                            name=vrf_info.name,
-                            rd=vrf_info.rd,
-                            description=vrf_info.description
+                            name=vrf_info["name"],
+                            rd=vrf_info.get("rd"),
+                            description=vrf_info.get("description")
                         )
                         session.add(vrf)
                         session.flush()
                     
-                    vrf_map[vrf_info.name] = vrf.id
+                    vrf_map[vrf_info["name"]] = vrf.id
                 
                 # Store routes
                 route_count = 0
                 for route_data in routes_data:
-                    vrf_id = vrf_map.get(route_data.vrf)
+                    vrf_id = vrf_map.get(route_data.get("vrf", "default"))
                     if not vrf_id:
                         continue
                     
                     route = Route(
                         vrf_id=vrf_id,
                         collection_run_id=collection_run.id,
-                        destination=route_data.destination,
-                        prefix_length=route_data.prefix_length,
-                        next_hop=route_data.next_hop,
-                        protocol=route_data.protocol,
-                        metric=route_data.metric,
-                        admin_distance=route_data.admin_distance,
-                        interface=route_data.interface,
-                        as_path=route_data.as_path,
-                        local_preference=route_data.local_preference,
-                        med=route_data.med,
-                        communities=route_data.communities,
-                        route_type=route_data.route_type
+                        destination=route_data.get("destination"),
+                        prefix_length=route_data.get("prefix_length", 32),
+                        next_hop=route_data.get("next_hop"),
+                        protocol=route_data.get("protocol", "Unknown"),
+                        metric=route_data.get("metric"),
+                        admin_distance=route_data.get("admin_distance"),
+                        interface=route_data.get("interface")
                     )
                     session.add(route)
                     route_count += 1
@@ -263,20 +282,6 @@ class RouteTableCollector:
                 self.logger.error("Collection failed", 
                                 hostname=hostname, 
                                 error=str(result.exception))
-                
-                # Store failed collection run
-                with db_manager.get_session() as session:
-                    device = session.query(Device).filter_by(hostname=hostname).first()
-                    if device:
-                        failed_run = CollectionRun(
-                            device_id=device.id,
-                            started_at=datetime.utcnow(),
-                            completed_at=datetime.utcnow(),
-                            status="failed",
-                            error_message=str(result.exception)
-                        )
-                        session.add(failed_run)
-                        session.commit()
                 continue
             
             # Store successful results

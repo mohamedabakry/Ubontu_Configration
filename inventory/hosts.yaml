@@ -1,80 +1,19 @@
-# Nornir Hosts Inventory
-# Configure your network devices here
+# Example hosts inventory for route table collector
+# Add your actual network devices here
 
-# Cisco devices
-router1-cisco:
-  hostname: 192.168.1.10
-  platform: ios
-  vendor: cisco
+# Example Cisco device
+example_router:
+  hostname: 192.168.1.1
+  platform: cisco_ios
   groups:
-    - cisco_routers
+    - cisco
   data:
-    location: "Datacenter-1"
-    os_version: "15.6(3)M"
+    vendor: cisco
+    location: "Data Center 1"
 
-router2-cisco:
-  hostname: 192.168.1.11
-  platform: iosxe
-  vendor: cisco
-  groups:
-    - cisco_routers
-  data:
-    location: "Datacenter-1"
-    os_version: "16.09.04"
-
-# Juniper devices
-router1-juniper:
-  hostname: 192.168.1.20
-  platform: junos
-  vendor: juniper
-  groups:
-    - juniper_routers
-  data:
-    location: "Datacenter-2"
-    os_version: "20.4R3"
-
-router2-juniper:
-  hostname: 192.168.1.21
-  platform: junos
-  vendor: juniper
-  groups:
-    - juniper_routers
-  data:
-    location: "Datacenter-2"
-    os_version: "21.1R1"
-
-# Huawei devices
-router1-huawei:
-  hostname: 192.168.1.30
-  platform: vrp
-  vendor: huawei
-  groups:
-    - huawei_routers
-  data:
-    location: "Datacenter-3"
-    os_version: "V200R010C00"
-
-# Example MPLS/VPN routers
-pe1-router:
-  hostname: 192.168.1.100
-  platform: iosxr
-  vendor: cisco
-  groups:
-    - cisco_routers
-    - pe_routers
-  data:
-    location: "Core"
-    os_version: "7.3.2"
-    role: "PE"
-
-pe2-router:
-  hostname: 192.168.1.101
-  platform: junos
-  vendor: juniper
-  groups:
-    - juniper_routers
-    - pe_routers
-  data:
-    location: "Core"
-    os_version: "20.4R3"
-    role: "PE"
+# Add more devices as needed
+# router2:
+#   hostname: 192.168.1.2
+#   platform: cisco_ios
+#   groups:
+#     - cisco

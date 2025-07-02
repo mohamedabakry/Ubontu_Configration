@@ -1,45 +1,11 @@
-# Nornir Groups Inventory
-# Define groups and their common connection parameters
+# Groups inventory for route table collector
 
-cisco_routers:
-  connection_options:
-    netmiko:
-      platform: cisco_ios
-      extras:
-        device_type: cisco_ios
-    napalm:
-      platform: ios
-    scrapli:
-      platform: cisco_iosxe
-      transport: system
-      auth_strict_key: false
-
-juniper_routers:
-  connection_options:
-    netmiko:
-      platform: juniper_junos
-      extras:
-        device_type: juniper_junos
-    napalm:
-      platform: junos
-    scrapli:
-      platform: juniper_junos
-      transport: system
-      auth_strict_key: false
-
-huawei_routers:
-  connection_options:
-    netmiko:
-      platform: huawei
-      extras:
-        device_type: huawei
-    scrapli:
-      platform: huawei_vrp
-      transport: system
-      auth_strict_key: false
-
-pe_routers:
+cisco:
+  platform: cisco_ios
   data:
-    role: pe
-    bgp_enabled: true
-    mpls_enabled: true
+    vendor: cisco
+
+juniper:
+  platform: juniper_junos
+  data:
+    vendor: juniper

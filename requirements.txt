@@ -1,48 +1,33 @@
 # ==================================================
-# STABLE PRODUCTION VERSIONS - TESTED COMBINATION
+# MINIMAL STABLE CONFIGURATION - NO CONFLICTS
 # ==================================================
 
-# Core Python framework
-# Python 3.9.x (specified in Dockerfile)
+# Core Database & ORM - MINIMAL STABLE
+psycopg2-binary==2.9.5
+sqlalchemy==1.4.46
+alembic==1.9.2
 
-# Network Automation Libraries - STABLE VERSIONS
-nornir==3.3.0                    # Last stable v3.3 release
-nornir-napalm==0.3.0            # Compatible with nornir 3.3.0
-nornir-netmiko==0.1.2           # Stable netmiko integration
-napalm==4.0.0                   # Proven stable version
-netmiko==4.1.2                  # Widely used stable version
-scrapli==2022.7.30              # Stable 2022 release
+# Network Automation - MINIMAL CONFLICT-FREE SET
+# Using only one network library to avoid conflicts
+netmiko==3.4.0                 # Compatible with nornir-netmiko
+nornir==3.3.0
+nornir-netmiko==0.1.2
 
-# Database & ORM - PROVEN STABLE STACK
-psycopg2-binary==2.9.5          # PostgreSQL adapter - stable
-sqlalchemy==1.4.46              # SQLAlchemy 1.4.x LTS series
-alembic==1.9.2                  # Database migrations - stable
+# CLI & Interface - MINIMAL
+click==8.1.3
+rich==13.3.1
 
-# Configuration Management - PURE PYTHON STANDARD LIBRARY
-# Using simple Python classes with os.getenv() - no external dependencies
+# Utilities - ESSENTIAL ONLY
+pyyaml==6.0
+python-dotenv==0.21.1
+structlog==22.3.0
 
-# CLI & User Interface - STABLE VERSIONS
-click==8.1.3                    # CLI framework - stable
-rich==13.3.1                    # Terminal formatting - stable
-schedule==1.1.0                 # Task scheduling - stable
+# Network utilities - MINIMAL
+netaddr==0.8.0
+ipaddress==1.0.23
 
-# Network Utilities - PROVEN VERSIONS
-netaddr==0.8.0                  # Network address manipulation
-pysnmp==4.4.12                  # SNMP library - stable
-ipaddress==1.0.23               # IP address utilities
+# Security - MINIMAL
+cryptography==3.4.8
 
-# File & Data Handling - STABLE VERSIONS
-pyyaml==6.0                     # YAML parser - stable
-jinja2==3.1.2                   # Template engine - stable
-python-dotenv==0.21.1           # Environment variables - stable
-
-# Logging & Monitoring - STABLE VERSIONS
-structlog==22.3.0               # Structured logging - stable
-
-# Security & Utilities - STABLE VERSIONS
-cryptography==3.4.8            # Cryptographic library - stable
-paramiko==2.12.0               # SSH client - stable
-
-# Development & Testing (optional)
-pytest==7.2.1                  # Testing framework - stable
-pytest-cov==4.0.0              # Coverage plugin - stable
+# Task scheduling
+schedule==1.1.0

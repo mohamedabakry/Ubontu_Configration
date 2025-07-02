@@ -2,8 +2,6 @@
 # STABLE PRODUCTION DOCKER COMPOSE
 # ==================================================
 
-version: '3.8'
-
 services:
   # PostgreSQL Database - STABLE VERSION
   postgres:
