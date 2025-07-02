@@ -1,9 +1,13 @@
+# ==================================================
+# STABLE PRODUCTION DOCKER COMPOSE
+# ==================================================
+
 version: '3.8'
 
 services:
-  # PostgreSQL Database
+  # PostgreSQL Database - STABLE VERSION
   postgres:
-    image: postgres:15-alpine
+    image: postgres:13.18-alpine  # LTS version - most stable
     environment:
       POSTGRES_DB: routing_tables
       POSTGRES_USER: postgres
@@ -13,31 +17,38 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
-      - "9100:5432"
+      - "9100:5432"  # External:Internal port mapping
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d routing_tables"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
     restart: unless-stopped
     networks:
       - routing_collector
 
-  # Route Table Collector (Scheduler Mode)
+  # Route Table Collector (Scheduler Mode) - STABLE
   route-collector:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile
     environment:
+      # Database connection (internal network)
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_NAME=routing_tables
       - DB_USER=postgres
       - DB_PASSWORD=postgres
+      # Collection settings
       - COLLECTION_INTERVAL=3600
       - MAX_WORKERS=10
+      - TIMEOUT=60
       - LOG_LEVEL=INFO
       - ENABLE_CHANGE_DETECTION=true
+      - CHANGE_THRESHOLD=0.1
     volumes:
-      - ./inventory:/app/inventory
+      - ./inventory:/app/inventory:ro
       - ./logs:/app/logs
       - collector_data:/app/data
     depends_on:
@@ -50,7 +61,9 @@ services:
 
   # One-time Collection Service (for manual runs)
   route-collector-once:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     environment:
       - DB_HOST=postgres
       - DB_PORT=5432
@@ -59,7 +72,7 @@ services:
       - DB_PASSWORD=postgres
       - LOG_LEVEL=INFO
     volumes:
-      - ./inventory:/app/inventory
+      - ./inventory:/app/inventory:ro
       - ./logs:/app/logs
       - collector_data:/app/data
     depends_on:
@@ -71,9 +84,9 @@ services:
       - manual
     command: ["python", "-m", "src.cli", "collect"]
 
-  # pgAdmin for database management (optional)
+  # pgAdmin for database management - STABLE VERSION
   pgadmin:
-    image: dpage/pgadmin4:latest
+    image: dpage/pgadmin4:8.5  # Stable version
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: admin
@@ -90,19 +103,26 @@ services:
     profiles:
       - admin
 
-  # Redis for caching (future enhancement)
+  # Redis for caching - STABLE VERSION
   redis:
-    image: redis:7-alpine
+    image: redis:7.0.15-alpine  # Stable Redis version
     ports:
       - "8080:6379"
     volumes:
       - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     restart: unless-stopped
     networks:
       - routing_collector
     profiles:
       - cache
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
 
+# Persistent volumes
 volumes:
   postgres_data:
     driver: local
@@ -113,9 +133,12 @@ volumes:
   collector_data:
     driver: local
 
+# Network configuration
 networks:
   routing_collector:
     driver: bridge
     ipam:
+      driver: default
       config:
         - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1
