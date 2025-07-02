@@ -12,33 +12,28 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV PIP_NO_CACHE_DIR=1
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Install system dependencies - STABLE VERSIONS
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    # Build essentials
-    gcc=4:10.2.1-1 \
-    # PostgreSQL client
-    libpq-dev=13.18-0+deb11u1 \
-    # Network tools
-    openssh-client=1:8.4p1-5+deb11u3 \
-    sshpass=1.09-1 \
-    telnet=0.17-41.2 \
-    iputils-ping=3:20210202-1 \
-    netcat-openbsd=1.217-3 \
-    # Utilities
-    curl=7.74.0-1.3+deb11u13 \
-    vim=2:8.2.2434-3+deb11u1 \
-    # Cleanup
+    gcc \
+    libpq-dev \
+    openssh-client \
+    sshpass \
+    telnet \
+    iputils-ping \
+    netcat-openbsd \
+    curl \
+    vim \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
 # Create application directory
 WORKDIR /app
 
-# Upgrade pip to stable version and install wheel
-RUN pip install --no-cache-dir \
-    pip==23.0.1 \
-    setuptools==65.6.3 \
-    wheel==0.38.4
+# Upgrade pip and install wheel
+RUN pip install --no-cache-dir --upgrade \
+    pip \
+    setuptools \
+    wheel
 
 # Copy requirements and install Python dependencies
 COPY requirements.txt .
