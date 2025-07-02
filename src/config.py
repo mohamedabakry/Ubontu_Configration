@@ -1,8 +1,9 @@
 """Configuration management for the routing table collector."""
 import os
 from typing import Dict, List, Optional, Any
-from pydantic import Field, validator
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import field_validator
 
 
 class DatabaseConfig(BaseSettings):
@@ -48,7 +49,8 @@ class CollectorConfig(BaseSettings):
     enable_change_detection: bool = Field(default=True, description="Enable change detection")
     change_threshold: float = Field(default=0.1, description="Change threshold percentage")
     
-    @validator("log_level")
+    @field_validator("log_level")
+    @classmethod
     def validate_log_level(cls, v):
         """Validate log level."""
         valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
