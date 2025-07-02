@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.9-slim
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
@@ -15,6 +15,7 @@ RUN apt-get update && apt-get install -y \
     iputils-ping \
     curl \
     vim \
+    netcat \
     && rm -rf /var/lib/apt/lists/*
 
 # Create application directory
@@ -22,6 +23,7 @@ WORKDIR /app
 
 # Copy requirements and install Python dependencies
 COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
@@ -31,7 +33,7 @@ COPY inventory/ ./inventory/
 # Create .env file template
 RUN echo "# Database Configuration" > .env.example && \
     echo "DB_HOST=postgres" >> .env.example && \
-    echo "DB_PORT=9100" >> .env.example && \
+    echo "DB_PORT=5432" >> .env.example && \
     echo "DB_NAME=routing_tables" >> .env.example && \
     echo "DB_USER=postgres" >> .env.example && \
     echo "DB_PASSWORD=postgres" >> .env.example && \
@@ -71,9 +73,6 @@ RUN echo '#!/bin/bash' > /app/entrypoint.sh && \
     echo '# Execute the command passed to docker run' >> /app/entrypoint.sh && \
     echo 'exec "$@"' >> /app/entrypoint.sh && \
     chmod +x /app/entrypoint.sh
-
-# Install netcat for database health check
-RUN apt-get update && apt-get install -y netcat-traditional && rm -rf /var/lib/apt/lists/*
 
 # Set the entrypoint
 ENTRYPOINT ["/app/entrypoint.sh"]

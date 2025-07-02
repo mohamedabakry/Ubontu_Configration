@@ -1,50 +1,64 @@
 """Configuration management for the routing table collector."""
 import os
 from typing import Optional
+from dataclasses import dataclass
 
-from pydantic import BaseSettings, Field, validator
 
-
-class Config(BaseSettings):
-    """Main application configuration."""
-    
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
+@dataclass
+class Config:
+    """Main application configuration using environment variables."""
     
     # Database settings
-    db_host: str = Field(default="localhost", description="Database host")
-    db_port: int = Field(default=9100, description="Database port")
-    db_name: str = Field(default="routing_tables", description="Database name")
-    db_user: str = Field(default="postgres", description="Database user")
-    db_password: str = Field(default="postgres", description="Database password")
+    db_host: str = "localhost"
+    db_port: int = 9100
+    db_name: str = "routing_tables"
+    db_user: str = "postgres"
+    db_password: str = "postgres"
     
     # Collection settings
-    collection_interval: int = Field(default=3600, description="Collection interval in seconds")
-    max_workers: int = Field(default=10, description="Maximum concurrent workers")
-    timeout: int = Field(default=60, description="Device connection timeout")
+    collection_interval: int = 3600
+    max_workers: int = 10
+    timeout: int = 60
     
     # Nornir inventory paths
-    inventory_hosts: str = Field(default="inventory/hosts.yaml", description="Hosts inventory file")
-    inventory_groups: str = Field(default="inventory/groups.yaml", description="Groups inventory file")
-    inventory_defaults: str = Field(default="inventory/defaults.yaml", description="Defaults inventory file")
+    inventory_hosts: str = "inventory/hosts.yaml"
+    inventory_groups: str = "inventory/groups.yaml"
+    inventory_defaults: str = "inventory/defaults.yaml"
     
     # Logging
-    log_level: str = Field(default="INFO", description="Logging level")
-    log_file: Optional[str] = Field(default=None, description="Log file path")
+    log_level: str = "INFO"
+    log_file: Optional[str] = None
     
     # Change detection
-    enable_change_detection: bool = Field(default=True, description="Enable change detection")
-    change_threshold: float = Field(default=0.1, description="Change threshold percentage")
+    enable_change_detection: bool = True
+    change_threshold: float = 0.1
     
-    @validator("log_level")
-    def validate_log_level(cls, v: str) -> str:
-        """Validate log level."""
+    def __post_init__(self):
+        """Load configuration from environment variables."""
+        # Database settings
+        self.db_host = os.getenv("DB_HOST", self.db_host)
+        self.db_port = int(os.getenv("DB_PORT", str(self.db_port)))
+        self.db_name = os.getenv("DB_NAME", self.db_name)
+        self.db_user = os.getenv("DB_USER", self.db_user)
+        self.db_password = os.getenv("DB_PASSWORD", self.db_password)
+        
+        # Collection settings
+        self.collection_interval = int(os.getenv("COLLECTION_INTERVAL", str(self.collection_interval)))
+        self.max_workers = int(os.getenv("MAX_WORKERS", str(self.max_workers)))
+        self.timeout = int(os.getenv("TIMEOUT", str(self.timeout)))
+        
+        # Logging
+        self.log_level = os.getenv("LOG_LEVEL", self.log_level).upper()
+        self.log_file = os.getenv("LOG_FILE", self.log_file)
+        
+        # Change detection
+        self.enable_change_detection = os.getenv("ENABLE_CHANGE_DETECTION", "true").lower() == "true"
+        self.change_threshold = float(os.getenv("CHANGE_THRESHOLD", str(self.change_threshold)))
+        
+        # Validate log level
         valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
-        if v.upper() not in valid_levels:
-            raise ValueError(f"Invalid log level. Must be one of: {valid_levels}")
-        return v.upper()
+        if self.log_level not in valid_levels:
+            self.log_level = "INFO"
     
     @property
     def database_url(self) -> str:
