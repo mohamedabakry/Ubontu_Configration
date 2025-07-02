@@ -2,18 +2,16 @@
 import os
 from typing import Optional
 
-from pydantic import Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import BaseSettings, Field, validator
 
 
 class Config(BaseSettings):
     """Main application configuration."""
     
-    model_config = SettingsConfigDict(
-        env_file=".env", 
-        env_file_encoding="utf-8",
-        case_sensitive=False
-    )
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"
+        case_sensitive = False
     
     # Database settings
     db_host: str = Field(default="localhost", description="Database host")
@@ -40,8 +38,7 @@ class Config(BaseSettings):
     enable_change_detection: bool = Field(default=True, description="Enable change detection")
     change_threshold: float = Field(default=0.1, description="Change threshold percentage")
     
-    @field_validator("log_level")
-    @classmethod
+    @validator("log_level")
     def validate_log_level(cls, v: str) -> str:
         """Validate log level."""
         valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
