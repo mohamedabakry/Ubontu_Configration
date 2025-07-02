@@ -17,7 +17,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
-      - "9100:5432"  # External:Internal port mapping
+      - "5433:5432"  # External:Internal port mapping (avoid conflict with existing PostgreSQL)
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d routing_tables"]
       interval: 10s
@@ -94,7 +94,7 @@ services:
     volumes:
       - pgadmin_data:/var/lib/pgadmin
     ports:
-      - "9090:80"
+      - "8081:80"  # Avoid conflict with existing pgAdmin on 8080
     depends_on:
       - postgres
     restart: unless-stopped
@@ -107,7 +107,7 @@ services:
   redis:
     image: redis:7.0.15-alpine  # Stable Redis version
     ports:
-      - "8080:6379"
+      - "6380:6379"  # Avoid conflict with existing pgAdmin on 8080
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru

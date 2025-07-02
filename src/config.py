@@ -9,7 +9,7 @@ class SimpleConfig:
     def __init__(self):
         # Database settings
         self.db_host = os.getenv("DB_HOST", "localhost")
-        self.db_port = int(os.getenv("DB_PORT", "9100"))
+        self.db_port = int(os.getenv("DB_PORT", "5433"))
         self.db_name = os.getenv("DB_NAME", "routing_tables")
         self.db_user = os.getenv("DB_USER", "postgres")
         self.db_password = os.getenv("DB_PASSWORD", "postgres")
