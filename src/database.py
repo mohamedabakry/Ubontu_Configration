@@ -23,11 +23,11 @@ class DatabaseManager:
         if self._initialized:
             return
         
-        logger.info("Initializing database connection", database_url=config.database.url)
+        logger.info("Initializing database connection", database_url=config.database_url)
         
         # Create engine with connection pooling
         self.engine = create_engine(
-            config.database.url,
+            config.database_url,
             poolclass=QueuePool,
             pool_size=20,
             max_overflow=30,

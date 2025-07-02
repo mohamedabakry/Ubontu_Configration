@@ -1,35 +1,26 @@
 """Configuration management for the routing table collector."""
 import os
-from typing import Dict, List, Optional, Any
-from pydantic import Field
+from typing import Optional
+
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import field_validator
 
 
-class DatabaseConfig(BaseSettings):
-    """Database configuration."""
+class Config(BaseSettings):
+    """Main application configuration."""
     
-    model_config = SettingsConfigDict(env_prefix="DB_")
-    
-    host: str = Field(default="localhost", description="Database host")
-    port: int = Field(default=9100, description="Database port")
-    name: str = Field(default="routing_tables", description="Database name")
-    user: str = Field(default="postgres", description="Database user")
-    password: str = Field(default="postgres", description="Database password")
-    
-    @property
-    def url(self) -> str:
-        """Get SQLAlchemy database URL."""
-        return f"postgresql://{self.user}:{self.password}@{self.host}:{self.port}/{self.name}"
-
-
-class CollectorConfig(BaseSettings):
-    """Main collector configuration."""
-    
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(
+        env_file=".env", 
+        env_file_encoding="utf-8",
+        case_sensitive=False
+    )
     
     # Database settings
-    database: DatabaseConfig = Field(default_factory=DatabaseConfig)
+    db_host: str = Field(default="localhost", description="Database host")
+    db_port: int = Field(default=9100, description="Database port")
+    db_name: str = Field(default="routing_tables", description="Database name")
+    db_user: str = Field(default="postgres", description="Database user")
+    db_password: str = Field(default="postgres", description="Database password")
     
     # Collection settings
     collection_interval: int = Field(default=3600, description="Collection interval in seconds")
@@ -51,13 +42,18 @@ class CollectorConfig(BaseSettings):
     
     @field_validator("log_level")
     @classmethod
-    def validate_log_level(cls, v):
+    def validate_log_level(cls, v: str) -> str:
         """Validate log level."""
         valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
         if v.upper() not in valid_levels:
             raise ValueError(f"Invalid log level. Must be one of: {valid_levels}")
         return v.upper()
+    
+    @property
+    def database_url(self) -> str:
+        """Get SQLAlchemy database URL."""
+        return f"postgresql://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"
 
 
 # Global configuration instance
-config = CollectorConfig()
+config = Config()
