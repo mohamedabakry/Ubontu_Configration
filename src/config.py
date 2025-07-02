@@ -1,8 +1,8 @@
 """Configuration management for the routing table collector."""
 import os
 from typing import Dict, List, Optional, Any
-from pydantic import BaseSettings, Field, validator
-from pydantic_settings import SettingsConfigDict
+from pydantic import Field, validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class DatabaseConfig(BaseSettings):
@@ -11,7 +11,7 @@ class DatabaseConfig(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="DB_")
     
     host: str = Field(default="localhost", description="Database host")
-    port: int = Field(default=5432, description="Database port")
+    port: int = Field(default=9100, description="Database port")
     name: str = Field(default="routing_tables", description="Database name")
     user: str = Field(default="postgres", description="Database user")
     password: str = Field(default="postgres", description="Database password")

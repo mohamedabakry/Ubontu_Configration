@@ -31,7 +31,7 @@ COPY inventory/ ./inventory/
 # Create .env file template
 RUN echo "# Database Configuration" > .env.example && \
     echo "DB_HOST=postgres" >> .env.example && \
-    echo "DB_PORT=5432" >> .env.example && \
+    echo "DB_PORT=9100" >> .env.example && \
     echo "DB_NAME=routing_tables" >> .env.example && \
     echo "DB_USER=postgres" >> .env.example && \
     echo "DB_PASSWORD=postgres" >> .env.example && \
@@ -86,7 +86,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD python -c "import sys; sys.path.append('/app'); from src.database import db_manager; db_manager.initialize(); print('OK')" || exit 1
 
 # Expose port for potential web interface (future enhancement)
-EXPOSE 8000
+EXPOSE 9090
 
 # Labels
 LABEL maintainer="Network Automation Team"
